@@ -66,9 +66,9 @@ namespace UsersNG.Services.UserService
         public async Task<ServiceResponse<User>> PostUser(User user)
         {
             var response = new ServiceResponse<User>();
-            var check = await _context.User.Where(x => x.Email == user.Email).FirstOrDefaultAsync();
+            //var check = await _context.User.Where(x => x.Email == user.Email).FirstOrDefaultAsync();
 
-            if (check != null)
+            if (CheckEmail(user.Email))
             {
                 response.Success = false;
                 response.Message = "EmailAlreadyExists";
@@ -91,6 +91,14 @@ namespace UsersNG.Services.UserService
             {
                 response.Success = false;
                 response.Message = "BadRequest";
+
+                return response;
+            }
+
+            if (CheckEmail(user.Email, user.Id))
+            {
+                response.Success = false;
+                response.Message = "EmailAlreadyExists";
 
                 return response;
             }
@@ -124,6 +132,20 @@ namespace UsersNG.Services.UserService
         private bool UserExists(int id)
         {
             return _context.User.Any(e => e.Id == id);
+        }
+
+        private bool CheckEmail(string email, int id = 0)
+        {
+            var user = new User();
+            if (id > 0)
+            {
+                user = _context.User.Where(x => x.Email == email && x.Id != id).FirstOrDefault();
+            }
+            else
+            {
+                user = _context.User.Where(x => x.Email == email).FirstOrDefault();
+            }
+            return user != null ? true : false;
         }
     }
 }

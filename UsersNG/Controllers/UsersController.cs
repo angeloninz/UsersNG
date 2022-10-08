@@ -50,6 +50,11 @@ namespace UsersNG.Controllers
 
             var result = await _userService.PutUser(id, user);
 
+            if(!result.Success && result.Message== "EmailAlreadyExists")
+            {
+                return Conflict();
+            }
+
             if (!result.Success)
             {
                 return NotFound();
