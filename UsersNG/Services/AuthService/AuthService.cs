@@ -1,5 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MailKit.Net.Smtp;
+using MailKit.Security;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MimeKit;
+using MimeKit.Text;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -116,9 +120,43 @@ namespace UsersNG.Services.AuthService
             _context.User.Add(user);
             await _context.SaveChangesAsync();
 
+            var emailRequest = new EmailDto();
+            emailRequest.Body = "<h1>Registration Success.</h1>";
+            emailRequest.To = user.Email;
+            emailRequest.Subject = "Registration";
+            if (SendEmail(emailRequest))
+            {
+                //email ok
+            }
+
             response.Data = user;
 
             return response;
+        }
+
+        private bool SendEmail(EmailDto request)
+        {
+            try
+            {
+                var email = new MimeMessage();
+                email.From.Add(MailboxAddress.Parse("henry.haley@ethereal.email"));
+                email.To.Add(MailboxAddress.Parse(request.To));
+                email.Subject = request.Subject;
+                email.Body = new TextPart(TextFormat.Html) { Text = request.Body };
+
+                using var smtp = new SmtpClient();
+                smtp.Connect(_configuration.GetSection("EmailHost").Value, 
+                    Convert.ToInt32(_configuration.GetSection("EmailPort").Value), SecureSocketOptions.StartTls);
+                smtp.Authenticate(_configuration.GetSection("EmailAddress").Value, _configuration.GetSection("EmailPassword").Value);
+                smtp.Send(email);
+                smtp.Disconnect(true);
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
